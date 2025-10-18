@@ -6,13 +6,12 @@ from urls import ORDERS_LIST
 @allure.feature("Список заказов")
 class TestOrdersList:
 
-    @allure.story("Возвращается список заказов")
+    @allure.title("В теле ответа возвращается список заказов")
     def test_get_orders_list(self):
-        """В ответе есть поле orders, и это список"""
         with allure.step("Отправляем запрос на получение списка заказов"):
             response = requests.get(ORDERS_LIST)
-        with allure.step("Проверяем содержимое ответа"):
+        with allure.step("Проверяем, что ответ содержит список orders"):
             assert response.status_code == 200
-            body = response.json()
-            assert "orders" in body
-            assert isinstance(body["orders"], list)
+            data = response.json()
+            assert "orders" in data
+            assert isinstance(data["orders"], list)

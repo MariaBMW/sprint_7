@@ -1,35 +1,37 @@
 import pytest
 import requests
-from utils import generate_random_string, delete_courier_by_id
-from urls import CREATE_COURIER, LOGIN_COURIER
-from data import ORDER_TEMPLATE
+import allure
+from urls import CREATE_COURIER
+from helpers import (
+    generate_courier_data,
+    delete_courier_by_id,
+    get_courier_id,
+    generate_order_data,
+)
 
 @pytest.fixture
 def courier_data():
-    # Генерирует уникальные данные нового курьера для теста
-    return {
-        "login": generate_random_string(10),
-        "password": generate_random_string(10),
-        "firstName": generate_random_string(10)
-    }
+    with allure.step("Генерация данных для нового курьера"):
+        return generate_courier_data()
 
 @pytest.fixture
 def courier(courier_data):
-    # Создаёт курьера, после теста удаляет его из системы
-    response = requests.post(CREATE_COURIER, data=courier_data)
-    assert response.status_code == 201
-    login_resp = requests.post(LOGIN_COURIER, data={
-        "login": courier_data['login'],
-        "password": courier_data['password']
-    })
-    courier_id = login_resp.json().get("id")
-    yield courier_data, courier_id
-    if courier_id:
-        delete_courier_by_id(courier_id)
+    with allure.step("Создание тестового курьера"):
+        response = requests.post(CREATE_COURIER, json=courier_data)
+        assert response.status_code == 201, f"Курьер не создан: {response.text}"
+        courier_id = get_courier_id(courier_data["login"], courier_data["password"])
+        assert courier_id is not None, "Не удалось получить id курьера"
+
+    yield courier_data, courier_id, response
+
+    with allure.step("Удаление тестового курьера после теста"):
+        if courier_id:  # Проверяем, что курьер создан
+            status_code = delete_courier_by_id(courier_id)
+            assert status_code == 200, f"Курьер не удален, статус: {status_code}"
 
 @pytest.fixture
 def order_data():
-    # Копирует шаблон заказа, чтобы данные гарантированно не пересекались между тестами
-    data = ORDER_TEMPLATE.copy()
-    data["comment"] = generate_random_string(15)
-    return data
+    with allure.step("Генерирование изолированных тест-данных заказа"):
+        # Используем хелпер для генерации свежих уникальных данных заказа
+        return generate_order_data()
+    
