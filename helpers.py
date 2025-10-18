@@ -2,7 +2,7 @@ import random
 import string
 import requests
 import allure
-from urls import DELETE_COURIER, LOGIN_COURIER, CANCEL_ORDER
+from urls import DELETE_COURIER, LOGIN_COURIER, CANCEL_ORDER, CREATE_COURIER
 from data import ORDER_TEMPLATE
 
 @allure.step("Генерация случайной строки длиной {length}")
@@ -51,3 +51,13 @@ def cancel_order(track):
     allure.attach(str(response.text), "Ответ отмены", allure.attachment_type.TEXT)
     return response.status_code
 
+# Новый метод для создания курьера с проверкой
+@allure.step("Создание курьера с данными {courier_data}")
+def create_courier(courier_data):
+    response = requests.post(CREATE_COURIER, json=courier_data)
+    assert response.status_code == 201, f"Курьер не создан: {response.text}"
+    
+    courier_id = get_courier_id(courier_data["login"], courier_data["password"])
+    assert courier_id is not None, "Не удалось получить id курьера"
+    
+    return courier_id, response
